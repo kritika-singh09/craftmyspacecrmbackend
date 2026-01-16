@@ -43,7 +43,43 @@ const userRegistrationSchema = new mongoose.Schema(
         isActive: {
             type: Boolean,
             default: true
-        }
+        },
+        phone: {
+            type: String,
+            trim: true
+        },
+        // 🚀 ENTERPRISE WORKFORCE UPGRADES
+        status: {
+            type: String,
+            enum: ["PENDING", "ACTIVE", "DISABLED"],
+            default: "PENDING"
+        },
+        forcePasswordReset: {
+            type: Boolean,
+            default: true
+        },
+        accessLevel: {
+            type: String,
+            enum: ["READ", "WRITE", "APPROVE"],
+            default: "READ"
+        },
+        reportingTo: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "userregistration"
+        },
+        skills: [String],
+        certifications: [String],
+        photoUrl: String,
+        notificationSettings: {
+            whatsapp: { type: Boolean, default: true },
+            email: { type: Boolean, default: true },
+            app: { type: Boolean, default: true }
+        },
+        timeline: [{
+            action: String,
+            date: { type: Date, default: Date.now },
+            performedBy: String
+        }]
     },
     { timestamps: true }
 );

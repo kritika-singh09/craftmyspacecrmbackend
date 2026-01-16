@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import userregistration from '../models/userregistration.js';
 import companyregistration from '../models/companyregistration.js';
 import login from '../models/login.js';
+import Project from '../models/construction/project.js';
 
 const generateToken = (id) => {
     return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -115,7 +116,11 @@ export const registerSuperAdmin = async (req, res) => {
 
 export const registerUser = async (req, res) => {
     try {
-        const { name, email, password, role, companyId } = req.body;
+        const {
+            name, email, password, role, companyId, phone,
+            accessLevel, skills, certifications, reportingTo,
+            notificationSettings
+        } = req.body;
 
         // Check if user already exists
         const userExists = await userregistration.findOne({ email });
@@ -129,13 +134,26 @@ export const registerUser = async (req, res) => {
             return res.status(404).json({ message: 'Company not found' });
         }
 
-        // Create User
+        // Create User (Default to PENDING & Force Password Reset)
         const user = await userregistration.create({
             name,
             email,
             password,
             role,
-            company: companyId
+            company: companyId,
+            phone,
+            accessLevel: accessLevel || 'READ',
+            skills,
+            certifications,
+            reportingTo,
+            notificationSettings,
+            status: 'PENDING',
+            forcePasswordReset: true,
+            timeline: [{
+                action: 'Personnel Created in Vault',
+                date: new Date(),
+                performedBy: req.user?.name || 'System Auto'
+            }]
         });
 
         if (user) {
@@ -162,14 +180,19 @@ export const loginUser = async (req, res) => {
 
         if (user && (await user.comparePassword(password))) {
             // Log the login
-            await login.create({
-                user: user._id,
-                email: user.email,
-                role: user.role,
-                company: user.company,
-                ipAddress: req.ip,
-                userAgent: req.headers['user-agent']
-            });
+            try {
+                await login.create({
+                    user: user._id,
+                    email: user.email,
+                    role: user.role,
+                    company: user.company,
+                    ipAddress: req.ip,
+                    userAgent: req.headers['user-agent']
+                });
+            } catch (logError) {
+                console.error('FAILED_TO_LOG_LOGIN:', logError);
+                // We continue even if logging fails
+            }
 
             res.json({
                 _id: user._id,
@@ -183,6 +206,7 @@ export const loginUser = async (req, res) => {
             res.status(401).json({ message: 'Invalid email or password' });
         }
     } catch (error) {
+        console.error('LOGIN_ERROR in controllers/authController.js:', error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -203,6 +227,45 @@ export const getCompanies = async (req, res) => {
             { _id: 1, name: 1 }
         ).sort({ name: 1 });
         res.json(companies);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getUserTimeline = async (req, res) => {
+    try {
+        const user = await userregistration.findById(req.params.id, 'timeline name');
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        res.json(user.timeline || []);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+export const getUserAssignments = async (req, res) => {
+    try {
+        // Project imported at top level
+        const projects = await Project.find({
+            $or: [
+                { projectLead: req.params.id },
+                { 'teamMembers.user': req.params.id }
+            ],
+            company: req.user.company
+        }).populate('projectLead', 'name');
+
+        const assignments = projects.map(p => {
+            const teamInfo = p.teamMembers.find(m => m.user?.toString() === req.params.id);
+            return {
+                projectId: p._id,
+                name: p.name,
+                code: p.projectCode,
+                status: p.status,
+                startDate: p.start_date,
+                role: p.projectLead?._id?.toString() === req.params.id ? 'Project Lead' : (teamInfo?.role || 'Team Member')
+            };
+        });
+
+        res.json(assignments);
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

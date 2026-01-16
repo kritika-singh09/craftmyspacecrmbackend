@@ -1,8 +1,19 @@
 import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import http from 'http';
 import connectDB from './config/db.js';
 import authRoutes from './routes/authRoutes.js';
+import projectRoutes from './routes/construction/projectRoutes.js';
+import reportRoutes from './routes/construction/reportRoutes.js';
+import documentRoutes from './routes/construction/documentRoutes.js';
+import materialRoutes from './routes/construction/materialRoutes.js';
+import financeRoutes from './routes/financeRoutes.js';
+import safetyRoutes from './routes/construction/safetyRoutes.js';
+import qualityRoutes from './routes/construction/qualityRoutes.js';
+import complianceRoutes from './routes/construction/complianceRoutes.js';
+import vendorRoutes from './routes/construction/vendorRoutes.js';
+import { initSocket } from './config/socket.js'; // ⚡ WS: Socket initialization
 
 dotenv.config();
 
@@ -10,6 +21,10 @@ dotenv.config();
 connectDB();
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.io ⚡
+initSocket(server);
 
 // Middleware
 app.use(cors());
@@ -30,6 +45,15 @@ app.use((err, req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/materials', materialRoutes);
+app.use('/api/finance', financeRoutes);
+app.use('/api/safety', safetyRoutes);
+app.use('/api/quality', qualityRoutes);
+app.use('/api/compliance', complianceRoutes);
+app.use('/api', vendorRoutes);
 
 // Health Check
 app.get('/', (req, res) => {
@@ -38,6 +62,6 @@ app.get('/', (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
