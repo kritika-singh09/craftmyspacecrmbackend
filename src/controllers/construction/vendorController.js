@@ -12,24 +12,46 @@ export const createVendor = async (req, res) => {
             company: req.user.company
         };
 
+        console.log('Creating Vendor for company:', req.user.company);
+
         const vendor = await Vendor.create(vendorData);
 
         res.status(201).json(vendor);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error('VENDOR_CREATE_ERROR:', error);
+        res.status(500).json({
+            message: error.message,
+            stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
     }
 };
 
 // @desc    Get all vendors
 // @route   GET /api/vendors
+// @access  Private
+// @query   domain (CONSTRUCTION, ARCHITECTURE, INTERIOR), category
 export const getVendors = async (req, res) => {
     try {
-        const { category, riskLevel, isBlacklisted } = req.query;
+        const { category, riskLevel, isBlacklisted, domain, search } = req.query;
 
         let filter = { company: req.user.company };
         if (category) filter.category = category;
         if (riskLevel) filter.riskLevel = riskLevel;
         if (isBlacklisted !== undefined) filter.isBlacklisted = isBlacklisted === 'true';
+
+        // 🌍 Domain Filter
+        if (domain) {
+            filter.domains = domain.toUpperCase();
+        }
+
+        // 🔍 Search Filter
+        if (search) {
+            filter.$or = [
+                { name: { $regex: search, $options: 'i' } },
+                { 'contactPerson.name': { $regex: search, $options: 'i' } },
+                { specializations: { $regex: search, $options: 'i' } }
+            ];
+        }
 
         const vendors = await Vendor.find(filter).sort({ performanceScore: -1 });
 

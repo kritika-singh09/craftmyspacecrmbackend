@@ -62,7 +62,8 @@ const projectSchema = new mongoose.Schema({
     company: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'companyregistration',
-        required: true
+        required: true,
+        index: true
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -82,20 +83,20 @@ const projectSchema = new mongoose.Schema({
         type: String,
         trim: true
     },
-    modules: {
-        architecture: {
-            enabled: { type: Boolean, default: false },
-            status: { type: String, enum: ['LOCKED', 'ONGOING', 'COMPLETED'], default: 'LOCKED' }
-        },
-        interior: {
-            enabled: { type: Boolean, default: false },
-            status: { type: String, enum: ['LOCKED', 'ONGOING', 'COMPLETED'], default: 'LOCKED' }
-        },
-        construction: {
-            enabled: { type: Boolean, default: false },
-            status: { type: String, enum: ['LOCKED', 'ONGOING', 'COMPLETED'], default: 'LOCKED' }
-        }
-    },
+    // modules: {
+    //     architecture: {
+    //         enabled: { type: Boolean, default: false },
+    //         status: { type: String, enum: ['LOCKED', 'ONGOING', 'COMPLETED'], default: 'LOCKED' }
+    //     },
+    //     interior: {
+    //         enabled: { type: Boolean, default: false },
+    //         status: { type: String, enum: ['LOCKED', 'ONGOING', 'COMPLETED'], default: 'LOCKED' }
+    //     },
+    //     construction: {
+    //         enabled: { type: Boolean, default: false },
+    //         status: { type: String, enum: ['LOCKED', 'ONGOING', 'COMPLETED'], default: 'LOCKED' }
+    //     }
+    // },
     teamMembers: [{
         user: { type: mongoose.Schema.Types.ObjectId, ref: 'userregistration' },
         role: String

@@ -55,7 +55,7 @@ const complianceTrackerSchema = new mongoose.Schema({
 });
 
 // Auto-update status and reminder based on expiry
-complianceTrackerSchema.pre('save', function (next) {
+complianceTrackerSchema.pre('save', async function () {
     const today = new Date();
     const daysToExpiry = Math.floor((this.expiryDate - today) / (1000 * 60 * 60 * 24));
 
@@ -68,8 +68,6 @@ complianceTrackerSchema.pre('save', function (next) {
         this.status = 'VALID';
         this.renewalReminder = false;
     }
-
-    next();
 });
 
 export const ComplianceTracker = mongoose.model('ComplianceTracker', complianceTrackerSchema);

@@ -56,8 +56,7 @@ export const MaterialMaster = mongoose.model('MaterialMaster', materialMasterSch
 const materialRequestSchema = new mongoose.Schema({
     requestId: {
         type: String,
-        unique: true,
-        required: true
+        unique: true
     },
     materialMaster: {
         type: mongoose.Schema.Types.ObjectId,
@@ -118,7 +117,7 @@ const materialRequestSchema = new mongoose.Schema({
 });
 
 // Middleware to generate a unique request ID before saving
-materialRequestSchema.pre('save', async function (next) {
+materialRequestSchema.pre('save', async function () {
     if (!this.requestId) {
         const count = await this.constructor.countDocuments();
         const date = new Date();
@@ -126,7 +125,6 @@ materialRequestSchema.pre('save', async function (next) {
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         this.requestId = `REQ-${year}${month}-${(count + 1).toString().padStart(4, '0')}`;
     }
-    next();
 });
 
 export const MaterialRequest = mongoose.model('MaterialRequest', materialRequestSchema);

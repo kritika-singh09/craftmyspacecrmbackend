@@ -15,6 +15,16 @@ const vendorSchema = new mongoose.Schema({
         enum: ['MATERIAL', 'SERVICE', 'EQUIPMENT', 'SUBCONTRACTOR'],
         required: true
     },
+    // 🌍 UNIVERSAL DOMAIN MAPPING
+    domains: [{
+        type: String,
+        enum: ['CONSTRUCTION', 'ARCHITECTURE', 'INTERIOR'],
+        required: true
+    }],
+    specializations: [{
+        type: String, // e.g., 'Cement', 'Furniture', 'Glass'
+        trim: true
+    }],
     contactPerson: {
         name: String,
         phone: String,
@@ -114,7 +124,7 @@ const vendorSchema = new mongoose.Schema({
     timestamps: true
 });
 
-vendorSchema.pre('save', function (next) {
+vendorSchema.pre('save', async function () {
     if (this.complianceDocs && this.complianceDocs.length > 0) {
         const today = new Date();
         this.complianceDocs.forEach(doc => {
@@ -130,7 +140,6 @@ vendorSchema.pre('save', function (next) {
             }
         });
     }
-    next();
 });
 
 vendorSchema.methods.updateRating = function () {
@@ -244,7 +253,7 @@ const rateHistorySchema = new mongoose.Schema({
     timestamps: true
 });
 
-rateHistorySchema.pre('save', async function (next) {
+rateHistorySchema.pre('save', async function () {
     if (this.isNew) {
         const previousRate = await this.constructor.findOne({
             vendor: this.vendor,
@@ -257,7 +266,6 @@ rateHistorySchema.pre('save', async function (next) {
             this.priceFluctuation = ((this.rate - previousRate.rate) / previousRate.rate) * 100;
         }
     }
-    next();
 });
 
 rateHistorySchema.index({ vendor: 1, materialMaster: 1, effectiveDate: -1 });
@@ -368,26 +376,11 @@ const purchaseOrderSchema = new mongoose.Schema({
     timestamps: true
 });
 
-purchaseOrderSchema.pre('save', async function (next) {
-    if (!this.poNumber) {
-        const date = new Date();
-        const year = date.getFullYear().toString().slice(-2);
-        const month = (date.getMonth() + 1).toString().padStart(2, '0');
-        const day = date.getDate().toString().padStart(2, '0');
-        const datePrefix = `${year}${month}${day}`;
-
-        const count = await this.constructor.countDocuments({
-            poNumber: new RegExp(`^PO-${datePrefix}`)
-        });
-
-        this.poNumber = `PO-${datePrefix}-${(count + 1).toString().padStart(5, '0')}`;
-    }
-
+// Timeline and financial logic can stay if needed, but poNumber is now in controller
+purchaseOrderSchema.pre('validate', async function () {
     if (this.financial) {
         this.financial.balancePayable = this.grandTotal - this.financial.advancePaid - this.financial.retentionAmount;
     }
-
-    next();
 });
 
 purchaseOrderSchema.index({ vendor: 1, status: 1, createdAt: -1 });

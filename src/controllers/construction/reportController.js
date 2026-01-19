@@ -38,12 +38,42 @@ export const createReport = async (req, res) => {
         });
 
         if (report) {
-            // ⚡ WS: Notify about new report (SITE SUPERVISOR / PM)
+            // ⚡ WS: Notify about new report
             emitToCompany(req.user.company, 'REPORT_CREATED', {
-                message: `DPR Published: ${report.siteMeta?.site || 'Main Site'} - ${new Date(report.reportDate).toLocaleDateString()}`,
+                message: `DPR Published: ${report.siteMeta?.site || 'Main Site'}`,
                 reportId: report._id,
-                projectId: project
+                projectId: project,
+                userName: req.user.name
             });
+
+            // ⚡ WS: Instant Safety Alert Blast
+            if (report.safety?.safetyAlert) {
+                emitToCompany(req.user.company, 'SAFETY_ALERT', {
+                    message: `🚩 EMERGENCY: Safety Alert at ${report.siteMeta?.site || 'Project Site'}!`,
+                    severity: 'HIGH',
+                    reportId: report._id,
+                    project: project
+                });
+            }
+
+            // 🔄 Auto-Sync: Update Project Progress
+            const avgProgress = activities.reduce((acc, curr) => acc + (curr.progressPercent || 0), 0) / (activities.length || 1);
+            if (avgProgress > 0) {
+                await Project.findByIdAndUpdate(project, { $set: { progress: avgProgress } });
+                emitToCompany(req.user.company, 'WORK_PROGRESS_UPDATED', {
+                    projectId: project,
+                    newProgress: avgProgress
+                });
+            }
+
+            // 🔄 Auto-Sync: Material Inventory Deduction (Placeholder Logic)
+            if (resourceUsage?.materials?.length > 0) {
+                // In a production app, we would loop through and update Inventory model here
+                emitToCompany(req.user.company, 'MATERIAL_CONSUMED', {
+                    projectId: project,
+                    materials: resourceUsage.materials
+                });
+            }
 
             res.status(201).json(report);
         } else {

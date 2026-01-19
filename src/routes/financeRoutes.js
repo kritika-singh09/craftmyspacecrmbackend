@@ -7,6 +7,12 @@ import {
     createPaymentRequest, verifyPaymentRequest, releasePayment,
     getPaymentRequests, rejectPaymentRequest
 } from '../controllers/paymentController.js';
+import {
+    getCOA, createCOA
+} from '../controllers/financeController.js';
+import {
+    createInvoice, getInvoices, updateInvoiceStatus
+} from '../controllers/invoiceController.js';
 import { protect } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
@@ -26,6 +32,18 @@ router.route('/payment-requests')
 router.put('/payment-request/:id/verify', protect, verifyPaymentRequest);
 router.put('/payment-request/:id/release', protect, releasePayment);
 router.put('/payment-request/:id/reject', protect, rejectPaymentRequest);
+
+// COA Routes
+router.route('/coa')
+    .get(protect, getCOA)
+    .post(protect, createCOA);
+
+// Invoice Routes
+router.route('/invoices')
+    .get(protect, getInvoices)
+    .post(protect, createInvoice);
+
+router.put('/invoices/:id/status', protect, updateInvoiceStatus);
 
 // Analytics Routes
 router.get('/budget-health/:projectId', protect, getBudgetHealth);

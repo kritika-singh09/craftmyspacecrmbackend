@@ -13,13 +13,38 @@ export const createPO = async (req, res) => {
         const totalGst = (gst?.cgst || 0) + (gst?.sgst || 0) + (gst?.igst || 0);
         const grandTotal = totalAmount + totalGst;
 
-        // Check vendor credit limit
+        // Generate PO Number
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const datePrefix = `${year}${month}${day}`;
+
+        const count = await PurchaseOrder.countDocuments({
+            poNumber: new RegExp(`^PO-${datePrefix}`)
+        });
+        const poNumber = `PO-${datePrefix}-${(count + 1).toString().padStart(5, '0')}`;
+
+        // Check vendor status and credit limit
         const vendorDoc = await Vendor.findById(vendor);
-        if (vendorDoc.financialInfo.outstandingPayables + grandTotal > vendorDoc.financialInfo.creditLimit) {
-            return res.status(400).json({ message: 'PO amount exceeds vendor credit limit' });
+        if (!vendorDoc) return res.status(404).json({ message: 'Vendor not found' });
+
+        if (vendorDoc.isBlacklisted) {
+            return res.status(400).json({ message: 'Vendor is blacklisted and cannot receive new Purchase Orders' });
+        }
+
+        // Treat creditLimit: 0 as unlimited
+        const outstanding = vendorDoc.financialInfo.outstandingPayables || 0;
+        const creditLimit = vendorDoc.financialInfo.creditLimit || 0;
+
+        if (creditLimit > 0 && (outstanding + grandTotal > creditLimit)) {
+            return res.status(400).json({
+                message: `PO amount exceeds vendor credit limit (Limit: ₹${creditLimit}, Outstanding: ₹${outstanding}, New: ₹${grandTotal})`
+            });
         }
 
         const po = await PurchaseOrder.create({
+            poNumber,
             vendor,
             project,
             items,

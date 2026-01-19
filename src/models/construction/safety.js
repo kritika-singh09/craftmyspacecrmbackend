@@ -88,7 +88,7 @@ const safetyIncidentSchema = new mongoose.Schema({
 });
 
 // Auto-generate incident ID: INC-YYMMDD-00001
-safetyIncidentSchema.pre('save', async function (next) {
+safetyIncidentSchema.pre('save', async function () {
     if (!this.incidentId) {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
@@ -102,7 +102,6 @@ safetyIncidentSchema.pre('save', async function (next) {
 
         this.incidentId = `INC-${datePrefix}-${(count + 1).toString().padStart(5, '0')}`;
     }
-    next();
 });
 
 export const SafetyIncident = mongoose.model('SafetyIncident', safetyIncidentSchema);
@@ -250,7 +249,7 @@ const safetyCertificationSchema = new mongoose.Schema({
 });
 
 // Auto-update status based on expiry date
-safetyCertificationSchema.pre('save', function (next) {
+safetyCertificationSchema.pre('save', async function () {
     const today = new Date();
     const daysToExpiry = Math.floor((this.expiryDate - today) / (1000 * 60 * 60 * 24));
 
@@ -261,8 +260,6 @@ safetyCertificationSchema.pre('save', function (next) {
     } else {
         this.status = 'VALID';
     }
-
-    next();
 });
 
 // Index for quick worker certification lookup

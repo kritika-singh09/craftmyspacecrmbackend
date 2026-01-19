@@ -13,8 +13,22 @@ const transactionSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['Material', 'Labor', 'Machinery', 'Overheads', 'Compliance', 'Revenue'],
+        enum: ['Material', 'Labor', 'Machinery', 'Overheads', 'Compliance', 'Revenue', 'Payroll', 'Consultancy'],
         required: true
+    },
+    businessVertical: {
+        type: String,
+        enum: ['CONSTRUCTION', 'ARCHITECTURE', 'INTERIOR'],
+        required: true,
+        default: 'CONSTRUCTION'
+    },
+    coaAccount: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'COA'
+    },
+    ledgerDate: {
+        type: Date,
+        default: Date.now
     },
     amount: {
         type: Number,
@@ -88,7 +102,7 @@ const transactionSchema = new mongoose.Schema({
 });
 
 // Auto-generate transaction ID
-transactionSchema.pre('save', async function (next) {
+transactionSchema.pre('save', async function () {
     if (!this.transactionId) {
         const count = await this.constructor.countDocuments();
         const date = new Date();
@@ -97,7 +111,6 @@ transactionSchema.pre('save', async function (next) {
         const prefix = this.type === 'INCOME' ? 'INC' : 'EXP';
         this.transactionId = `${prefix}-${year}${month}-${(count + 1).toString().padStart(5, '0')}`;
     }
-    next();
 });
 
 export default mongoose.model('Transaction', transactionSchema);

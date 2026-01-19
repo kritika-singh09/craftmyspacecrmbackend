@@ -9,10 +9,14 @@ import reportRoutes from './routes/construction/reportRoutes.js';
 import documentRoutes from './routes/construction/documentRoutes.js';
 import materialRoutes from './routes/construction/materialRoutes.js';
 import financeRoutes from './routes/financeRoutes.js';
-import safetyRoutes from './routes/construction/safetyRoutes.js';
+import safetyRoutes from './routes/safetyRoutes.js';
 import qualityRoutes from './routes/construction/qualityRoutes.js';
 import complianceRoutes from './routes/construction/complianceRoutes.js';
 import vendorRoutes from './routes/construction/vendorRoutes.js';
+import workerRoutes from './routes/construction/workerRoutes.js';
+import clientRoutes from './routes/construction/clientRoutes.js';
+import contractorRoutes from './routes/construction/contractorRoutes.js';
+import purchaseOrderRoutes from './routes/construction/purchaseOrderRoutes.js';
 import { initSocket } from './config/socket.js'; // ⚡ WS: Socket initialization
 
 dotenv.config();
@@ -54,6 +58,10 @@ app.use('/api/safety', safetyRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api', vendorRoutes);
+app.use('/api/workers', workerRoutes);
+app.use('/api/construction/clients', clientRoutes);
+app.use('/api/construction/contractors', contractorRoutes);
+app.use('/api/purchase-orders', purchaseOrderRoutes);
 
 // Health Check
 app.get('/', (req, res) => {

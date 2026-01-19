@@ -85,7 +85,7 @@ const paymentRequestSchema = new mongoose.Schema({
 });
 
 // Auto-generate request ID
-paymentRequestSchema.pre('save', async function (next) {
+paymentRequestSchema.pre('save', async function () {
     if (!this.requestId) {
         const count = await this.constructor.countDocuments();
         const date = new Date();
@@ -93,7 +93,6 @@ paymentRequestSchema.pre('save', async function (next) {
         const month = (date.getMonth() + 1).toString().padStart(2, '0');
         this.requestId = `PAY-${year}${month}-${(count + 1).toString().padStart(5, '0')}`;
     }
-    next();
 });
 
 export default mongoose.model('PaymentRequest', paymentRequestSchema);

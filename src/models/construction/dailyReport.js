@@ -9,7 +9,8 @@ const dailyReportSchema = new mongoose.Schema({
     company: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'companyregistration',
-        required: true
+        required: true,
+        index: true
     },
     createdBy: {
         type: mongoose.Schema.Types.ObjectId,
@@ -56,12 +57,17 @@ const dailyReportSchema = new mongoose.Schema({
         gearInspection: { type: Boolean, default: true },
         hazardsObserved: String,
         incidents: String,
-        safetyChecklist: [String]
+        safetyChecklist: [String],
+        safetyAlert: { type: Boolean, default: false } // ⚡ Trigger for instant WebSocket blast
     },
     // 6️⃣ Attendance Management (Smart)
     attendance: {
         totalWorkers: Number,
         present: Number,
+        manpowerBreakdown: [{
+            skill: { type: String, enum: ['Mason', 'Helper', 'Electrician', 'Plumber', 'Carpenter', 'Supervisor', 'Other'] },
+            count: Number
+        }],
         shiftType: { type: String, enum: ['Morning', 'Evening', 'Night'], default: 'Morning' },
         lateReporting: [String],
         notes: String

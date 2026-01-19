@@ -117,7 +117,15 @@ export const createRequest = async (req, res) => {
     try {
         const { materialMasterId, project, quantity, priority, purpose, remarks } = req.body;
 
+        // ⚡ Generate Request ID in Controller to ensure it's present during validation
+        const count = await MaterialRequest.countDocuments();
+        const date = new Date();
+        const year = date.getFullYear().toString().slice(-2);
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const generatedId = `REQ-${year}${month}-${(count + 1).toString().padStart(4, '0')}`;
+
         const request = await MaterialRequest.create({
+            requestId: generatedId,
             materialMaster: materialMasterId,
             project,
             quantity,

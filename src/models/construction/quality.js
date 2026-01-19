@@ -69,7 +69,7 @@ const qualityInspectionSchema = new mongoose.Schema({
 });
 
 // Auto-generate inspection ID: QI-YYMMDD-00001
-qualityInspectionSchema.pre('save', async function (next) {
+qualityInspectionSchema.pre('save', async function () {
     if (!this.inspectionId) {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
@@ -83,7 +83,6 @@ qualityInspectionSchema.pre('save', async function (next) {
 
         this.inspectionId = `QI-${datePrefix}-${(count + 1).toString().padStart(5, '0')}`;
     }
-    next();
 });
 
 export const QualityInspection = mongoose.model('QualityInspection', qualityInspectionSchema);
@@ -171,7 +170,7 @@ const snagDefectSchema = new mongoose.Schema({
 });
 
 // Auto-generate snag ID: SNAG-YYMMDD-00001
-snagDefectSchema.pre('save', async function (next) {
+snagDefectSchema.pre('save', async function () {
     if (!this.snagId) {
         const date = new Date();
         const year = date.getFullYear().toString().slice(-2);
@@ -185,7 +184,6 @@ snagDefectSchema.pre('save', async function (next) {
 
         this.snagId = `SNAG-${datePrefix}-${(count + 1).toString().padStart(5, '0')}`;
     }
-    next();
 });
 
 export const SnagDefect = mongoose.model('SnagDefect', snagDefectSchema);
