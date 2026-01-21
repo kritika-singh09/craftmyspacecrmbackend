@@ -14,6 +14,7 @@ import qualityRoutes from './routes/construction/qualityRoutes.js';
 import complianceRoutes from './routes/construction/complianceRoutes.js';
 import vendorRoutes from './routes/construction/vendorRoutes.js';
 import workerRoutes from './routes/construction/workerRoutes.js';
+import labourRoutes from './routes/construction/labourRoutes.js';
 import clientRoutes from './routes/construction/clientRoutes.js';
 import contractorRoutes from './routes/construction/contractorRoutes.js';
 import purchaseOrderRoutes from './routes/construction/purchaseOrderRoutes.js';
@@ -54,6 +55,12 @@ app.use(cors({
 
 app.use(express.json());
 
+// Request logger
+app.use((req, res, next) => {
+    console.log(`${req.method} ${req.url}`);
+    next();
+});
+
 // Error handler for JSON syntax errors
 app.use((err, req, res, next) => {
     if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
@@ -68,6 +75,7 @@ app.use((err, req, res, next) => {
 
 // Routes
 app.use('/api/workers', workerRoutes);
+app.use('/api/labour', labourRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/reports', reportRoutes);
@@ -87,8 +95,22 @@ app.get('/', (req, res) => {
     res.send('API is running...');
 });
 
+// Debug Catch-all 404 (returns JSON instead of HTML)
+app.use((req, res) => {
+    console.log(`Resource not found: ${req.method} ${req.url}`);
+    res.status(404).json({
+        success: false,
+        error: 'Endpoint not found',
+        method: req.method,
+        path: req.url,
+        tip: 'Check if the route is registered in server.js'
+    });
+});
+
 const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
 });
+
+export default app;
