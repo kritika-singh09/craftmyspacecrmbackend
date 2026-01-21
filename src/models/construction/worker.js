@@ -48,6 +48,7 @@ const workerSchema = new mongoose.Schema({
         branchName: String
     },
     dailyWage: { type: Number, default: 0 },
+    pendingDues: { type: Number, default: 0 },
     documents: [{
         name: String,
         url: String,
@@ -56,7 +57,30 @@ const workerSchema = new mongoose.Schema({
     isActive: {
         type: Boolean,
         default: true
-    }
+    },
+    attendance: [{
+        date: { type: Date, required: true },
+        status: {
+            type: String,
+            enum: ['P', 'A', 'HD', 'L', 'Late'],
+            required: true
+        },
+        lateFee: { type: Number, default: 0 },
+        paid: { type: Boolean, default: false }
+    }],
+    advances: [{
+        amount: { type: Number, required: true },
+        date: { type: Date, default: Date.now },
+        reason: String,
+        settled: { type: Boolean, default: false }
+    }],
+    settlements: [{
+        date: { type: Date, default: Date.now },
+        totalEarnings: Number,
+        totalDeductions: Number,
+        netAmount: Number,
+        notes: String
+    }]
 }, {
     timestamps: true
 });

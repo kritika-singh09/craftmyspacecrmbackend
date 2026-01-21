@@ -48,6 +48,7 @@ app.use((err, req, res, next) => {
 });
 
 // Routes
+app.use('/api/workers', workerRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/reports', reportRoutes);
@@ -58,7 +59,6 @@ app.use('/api/safety', safetyRoutes);
 app.use('/api/quality', qualityRoutes);
 app.use('/api/compliance', complianceRoutes);
 app.use('/api', vendorRoutes);
-app.use('/api/workers', workerRoutes);
 app.use('/api/construction/clients', clientRoutes);
 app.use('/api/construction/contractors', contractorRoutes);
 app.use('/api/purchase-orders', purchaseOrderRoutes);

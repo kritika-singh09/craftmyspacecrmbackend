@@ -1,4 +1,5 @@
 import Invoice from '../models/invoice.js';
+import Transaction from '../models/transaction.js';
 
 // @desc    Create a new invoice
 // @route   POST /api/finance/invoices
@@ -25,6 +26,20 @@ export const createInvoice = async (req, res) => {
             notes,
             attachments,
             company: req.user.company
+        });
+
+        // Auto-post to Ledger (Transaction)
+        await Transaction.create({
+            transactionId: `TXN-INV-${invoice.invoiceNumber}`,
+            type: 'INCOME',
+            category: 'Revenue',
+            amount: totalAmount,
+            project,
+            company: req.user.company,
+            description: `Invoice ${invoice.invoiceNumber} for ${client}`,
+            status: 'PENDING',
+            invoice: invoice._id,
+            businessVertical: businessVertical
         });
 
         res.status(201).json(invoice);

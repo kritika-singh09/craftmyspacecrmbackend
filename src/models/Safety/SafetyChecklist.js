@@ -13,6 +13,7 @@ const safetyChecklistSchema = new mongoose.Schema({
         photoUrl: String // For proof or violation
     }],
     locationStr: String, // GPS Coordinates if available
+    photos: [String], // General photos for the report
     isVerified: { type: Boolean, default: false },
     verifiedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'UserRegistration' },
     riskLevel: { type: String, enum: ['Low', 'Medium', 'High'], default: 'Low' },

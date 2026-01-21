@@ -109,7 +109,7 @@ export const linkMaterialExpense = async (materialRequestId, userId, companyId) 
 // @route   GET /api/finance/transactions
 export const getTransactions = async (req, res) => {
     try {
-        const { project, category, type, startDate, endDate } = req.query;
+        const { project, category, type, startDate, endDate, businessVertical, coaAccount } = req.query;
 
         let filter = { company: req.user.company };
         if (project) filter.project = project;
@@ -148,6 +148,32 @@ export const approveTransaction = async (req, res) => {
             status: 'APPROVED',
             performedBy: req.user._id,
             note: req.body.note || 'Transaction approved'
+        });
+
+        await transaction.save();
+        res.json(transaction);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
+// @desc    Update transaction status
+// @route   PUT /api/finance/transactions/:id/status
+export const updateTransactionStatus = async (req, res) => {
+    try {
+        const { status, note } = req.body;
+        const transaction = await Transaction.findById(req.params.id);
+        if (!transaction) return res.status(404).json({ message: 'Transaction not found' });
+
+        transaction.status = status;
+        if (status === 'APPROVED') {
+            transaction.approvedBy = req.user._id;
+        }
+
+        transaction.timeline.push({
+            status,
+            performedBy: req.user._id,
+            note: note || `Status updated to ${status}`
         });
 
         await transaction.save();
@@ -239,12 +265,6 @@ export const getCashFlowForecast = async (req, res) => {
 // @route   GET /api/finance/coa
 export const getCOA = async (req, res) => {
     try {
-        // Migration: Ensure all existing accounts have a balance field
-        await COA.updateMany(
-            { company: req.user.company, balance: { $exists: false } },
-            { $set: { balance: 0 } }
-        );
-
         const coa = await COA.find({ company: req.user.company }).sort({ code: 1 });
         res.json(coa);
     } catch (error) {
@@ -271,25 +291,51 @@ export const createCOA = async (req, res) => {
     }
 };
 
+// @desc    Setup default COA for a company manually
+// @route   POST /api/finance/coa/defaults
+export const setupDefaultCOA = async (req, res) => {
+    try {
+        const companyId = req.user.company;
+        const existing = await COA.findOne({ company: companyId });
+        if (existing) {
+            return res.status(400).json({ message: 'Chart of Accounts already initialized for this company' });
+        }
+        await initializeDefaultCOA(companyId);
+        res.status(200).json({ success: true, message: 'Default COA initialized' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+};
+
 // @desc    Initialize default Chart of Accounts for a new company
 export const initializeDefaultCOA = async (companyId) => {
     try {
         const defaults = [
-            { code: '1000', name: 'Cash at Bank', type: 'Asset' },
-            { code: '1100', name: 'Petty Cash', type: 'Asset' },
-            { code: '1200', name: 'Accounts Receivable', type: 'Asset' },
-            { code: '2000', name: 'Accounts Payable', type: 'Liability' },
-            { code: '3000', name: 'Owner Equity', type: 'Equity' },
-            { code: '4000', name: 'Client Revenue', type: 'Revenue' },
-            { code: '5000', name: 'Material Cost', type: 'Expense' },
-            { code: '5100', name: 'Labor Charges', type: 'Expense' },
-            { code: '5200', name: 'Administrative Expenses', type: 'Expense' },
+            { code: '1000', name: 'Cash in Hand', type: 'Asset' },
+            { code: '1010', name: 'Petty Cash', type: 'Asset' },
+            { code: '1100', name: 'Main Bank Account', type: 'Asset' },
+            { code: '1200', name: 'Accounts Receivable (Clients)', type: 'Asset' },
+            { code: '1300', name: 'Project Advances', type: 'Asset' },
+            { code: '2000', name: 'Accounts Payable (Vendors)', type: 'Liability' },
+            { code: '2100', name: 'GST Payable', type: 'Liability' },
+            { code: '2200', name: 'TDS Payable', type: 'Liability' },
+            { code: '3000', name: 'Equity / Initial Capital', type: 'Equity' },
+            { code: '3100', name: 'Retained Earnings', type: 'Equity' },
+            { code: '4000', name: 'Project Revenue', type: 'Revenue' },
+            { code: '4100', name: 'Consultancy Income', type: 'Revenue' },
+            { code: '5000', name: 'Material Procurement', type: 'Expense' },
+            { code: '5100', name: 'Direct Labor Charges', type: 'Expense' },
+            { code: '5200', name: 'Site Overheads', type: 'Expense' },
+            { code: '5300', name: 'Office Rent & Utilities', type: 'Expense' },
+            { code: '5400', name: 'Design & Engineering Costs', type: 'Expense' },
         ];
 
         const coaEntries = defaults.map(d => ({ ...d, company: companyId, balance: 0 }));
         await COA.insertMany(coaEntries);
         console.log(`Default COA initialized for company ${companyId}`);
+        return true;
     } catch (error) {
         console.error('Failed to initialize default COA:', error);
+        throw error;
     }
 };

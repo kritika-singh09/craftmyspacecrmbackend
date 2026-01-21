@@ -13,7 +13,6 @@ const transactionSchema = new mongoose.Schema({
     },
     category: {
         type: String,
-        enum: ['Material', 'Labor', 'Machinery', 'Overheads', 'Compliance', 'Revenue', 'Payroll', 'Consultancy'],
         required: true
     },
     businessVertical: {
@@ -52,6 +51,10 @@ const transactionSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'MaterialRequest' // Auto-linked when material is issued
     },
+    invoice: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Invoice' // Linked when transaction is related to an invoice
+    },
     gst: {
         cgst: { type: Number, default: 0 },
         sgst: { type: Number, default: 0 },
@@ -61,7 +64,7 @@ const transactionSchema = new mongoose.Schema({
     },
     paymentMode: {
         type: String,
-        enum: ['Cash', 'Bank', 'UPI', 'Cheque', 'NEFT', 'RTGS'],
+        enum: ['Cash', 'Bank', 'UPI', 'Cheque', 'NEFT', 'RTGS', 'bank_transfer', 'upi', 'cash', 'cheque'],
         default: 'Bank'
     },
     referenceId: {

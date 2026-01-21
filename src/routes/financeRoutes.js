@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-    createTransaction, getTransactions, approveTransaction,
+    createTransaction, getTransactions, approveTransaction, updateTransactionStatus,
     getBudgetHealth, getCashFlowForecast
 } from '../controllers/financeController.js';
 import {
@@ -8,7 +8,7 @@ import {
     getPaymentRequests, rejectPaymentRequest
 } from '../controllers/paymentController.js';
 import {
-    getCOA, createCOA
+    getCOA, createCOA, setupDefaultCOA
 } from '../controllers/financeController.js';
 import {
     createInvoice, getInvoices, updateInvoiceStatus
@@ -22,7 +22,8 @@ router.route('/transactions')
     .post(protect, createTransaction)
     .get(protect, getTransactions);
 
-router.put('/transaction/:id/approve', protect, approveTransaction);
+router.put('/transactions/:id/approve', protect, approveTransaction);
+router.put('/transactions/:id/status', protect, updateTransactionStatus);
 
 // Payment Request Routes
 router.route('/payment-requests')
@@ -37,6 +38,7 @@ router.put('/payment-request/:id/reject', protect, rejectPaymentRequest);
 router.route('/coa')
     .get(protect, getCOA)
     .post(protect, createCOA);
+router.post('/coa/defaults', protect, setupDefaultCOA);
 
 // Invoice Routes
 router.route('/invoices')

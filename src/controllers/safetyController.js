@@ -4,6 +4,7 @@ import SafetyChecklist from '../models/Safety/SafetyChecklist.js';
 import IncidentReport from '../models/Safety/IncidentReport.js';
 import SafetyTraining from '../models/Safety/SafetyTraining.js';
 import { getIO } from '../config/socket.js';
+import { uploadToCloudinary } from '../middlewares/uploadMiddleware.js';
 
 // --- Policies ---
 export const getPolicies = async (req, res) => {
@@ -73,10 +74,21 @@ export const issuePPE = async (req, res) => {
 // --- Checklists ---
 export const submitChecklist = async (req, res) => {
     try {
+        const photoUrls = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const url = await uploadToCloudinary(file.buffer);
+                photoUrls.push(url);
+            }
+        }
+
+        const data = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body;
+
         const checklist = new SafetyChecklist({
-            ...req.body,
+            ...data,
+            photos: photoUrls,
             company: req.user.company,
-            submittedBy: req.user._id // Assuming middleware sets req.user
+            submittedBy: req.user._id
         });
         await checklist.save();
 
@@ -120,8 +132,19 @@ export const getChecklists = async (req, res) => {
 // --- Incidents ---
 export const reportIncident = async (req, res) => {
     try {
+        const photoUrls = [];
+        if (req.files && req.files.length > 0) {
+            for (const file of req.files) {
+                const url = await uploadToCloudinary(file.buffer);
+                photoUrls.push(url);
+            }
+        }
+
+        const data = typeof req.body.data === 'string' ? JSON.parse(req.body.data) : req.body;
+
         const incident = new IncidentReport({
-            ...req.body,
+            ...data,
+            photos: photoUrls,
             company: req.user.company,
             reportedBy: req.user._id
         });

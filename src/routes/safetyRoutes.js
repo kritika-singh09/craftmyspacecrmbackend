@@ -1,6 +1,7 @@
 import express from 'express';
 import * as safetyController from '../controllers/safetyController.js';
 import { protect as authMiddleware } from '../middlewares/authMiddleware.js';
+import { upload } from '../middlewares/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -17,11 +18,11 @@ router.post('/ppe', safetyController.addPPEItem);
 router.post('/ppe/issue', safetyController.issuePPE);
 
 // Checklists
-router.post('/checklists', safetyController.submitChecklist);
+router.post('/checklists', upload.array('photos'), safetyController.submitChecklist);
 router.get('/checklists', safetyController.getChecklists);
 
 // Incidents
-router.post('/incidents', safetyController.reportIncident);
+router.post('/incidents', upload.array('photos'), safetyController.reportIncident);
 router.get('/incidents', safetyController.getIncidents);
 
 // Training
