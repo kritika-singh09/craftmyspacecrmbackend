@@ -121,15 +121,20 @@ export const updateAttendance = async (req, res) => {
             return d.getTime() === attDate.getTime();
         });
 
-        if (existingIndex !== -1) {
-            worker.attendance[existingIndex].status = status;
-            worker.attendance[existingIndex].lateFee = lateFee || 0;
-            // Ensure paid is false when updating (unless explicitly handled, but for simplest logic, any update resets paid status or kept separate. 
-            // Better: if paid is true, maybe allow update but warn? For now, we assume updates might reset paid
-            // But actually we want: paid: false for new entries. Existing entries keep their paid status unless we mistakenly broke it.
-            // Let's just set paid: false for new pushes only.
+        if (status === 'None') {
+            // Remove attendance record if it exists
+            if (existingIndex !== -1) {
+                worker.attendance.splice(existingIndex, 1);
+            }
         } else {
-            worker.attendance.push({ date: attDate, status, lateFee: lateFee || 0, paid: false }); // explicit paid: false
+            if (existingIndex !== -1) {
+                worker.attendance[existingIndex].status = status;
+                worker.attendance[existingIndex].lateFee = lateFee || 0;
+                // Ensure paid is false when updating if logic requires, but usually we keep it unless explicitly changing.
+                // For simplicity, we keep existing logic of just updating status/lateFee.
+            } else {
+                worker.attendance.push({ date: attDate, status, lateFee: lateFee || 0, paid: false });
+            }
         }
 
         await worker.save();
@@ -164,11 +169,17 @@ export const updateBatchAttendance = async (req, res) => {
                 return d.getTime() === attDate.getTime();
             });
 
-            if (existingIndex !== -1) {
-                worker.attendance[existingIndex].status = status;
-                worker.attendance[existingIndex].lateFee = lateFee || 0;
+            if (status === 'None') {
+                if (existingIndex !== -1) {
+                    worker.attendance.splice(existingIndex, 1);
+                }
             } else {
-                worker.attendance.push({ date: attDate, status, lateFee: lateFee || 0, paid: false });
+                if (existingIndex !== -1) {
+                    worker.attendance[existingIndex].status = status;
+                    worker.attendance[existingIndex].lateFee = lateFee || 0;
+                } else {
+                    worker.attendance.push({ date: attDate, status, lateFee: lateFee || 0, paid: false });
+                }
             }
         });
 

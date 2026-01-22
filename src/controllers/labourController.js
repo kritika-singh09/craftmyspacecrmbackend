@@ -178,11 +178,18 @@ export const markAttendance = async (req, res) => {
             new Date(a.date).toISOString().split('T')[0] === dateStr
         );
 
-        if (existingIndex !== -1) {
-            labour.attendance[existingIndex].status = status;
-            labour.attendance[existingIndex].lateFee = lateFee || 0;
+        if (status === 'None') {
+            // Remove attendance record if it exists
+            if (existingIndex !== -1) {
+                labour.attendance.splice(existingIndex, 1);
+            }
         } else {
-            labour.attendance.push({ date, status, lateFee: lateFee || 0 });
+            if (existingIndex !== -1) {
+                labour.attendance[existingIndex].status = status;
+                labour.attendance[existingIndex].lateFee = lateFee || 0;
+            } else {
+                labour.attendance.push({ date, status, lateFee: lateFee || 0 });
+            }
         }
 
         await labour.save();
@@ -195,7 +202,7 @@ export const markAttendance = async (req, res) => {
         console.error('Error marking attendance:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to mark attendance'
+            error: error.message || 'Failed to mark attendance'
         });
     }
 };
@@ -221,11 +228,17 @@ export const updateBatchAttendance = async (req, res) => {
                 new Date(a.date).toISOString().split('T')[0] === dateStr
             );
 
-            if (existingIndex !== -1) {
-                labour.attendance[existingIndex].status = status;
-                labour.attendance[existingIndex].lateFee = lateFee || 0;
+            if (status === 'None') {
+                if (existingIndex !== -1) {
+                    labour.attendance.splice(existingIndex, 1);
+                }
             } else {
-                labour.attendance.push({ date, status, lateFee: lateFee || 0 });
+                if (existingIndex !== -1) {
+                    labour.attendance[existingIndex].status = status;
+                    labour.attendance[existingIndex].lateFee = lateFee || 0;
+                } else {
+                    labour.attendance.push({ date, status, lateFee: lateFee || 0 });
+                }
             }
         });
 
@@ -233,7 +246,7 @@ export const updateBatchAttendance = async (req, res) => {
         res.status(200).json({ success: true, data: labour });
     } catch (error) {
         console.error('Error batch updating attendance:', error);
-        res.status(500).json({ success: false, error: 'Failed to update batch attendance' });
+        res.status(500).json({ success: false, error: error.message || 'Failed to update batch attendance' });
     }
 };
 
@@ -269,10 +282,11 @@ export const addAdvance = async (req, res) => {
 };
 
 // Settle account
+// Settle account
 export const settleAccount = async (req, res) => {
     try {
         const { id } = req.params;
-        const { amountPaid } = req.body; // If provided, partial settlement. If not, full.
+        const { amountPaid, notes } = req.body;
 
         const labour = await Labour.findById(id);
         if (!labour) {
@@ -282,28 +296,41 @@ export const settleAccount = async (req, res) => {
             });
         }
 
-        // Logic to calculate settlement
-        // 1. Sum up all unpaid earnings
-        // 2. Sum up all unsettled advances
-        // 3. Apply amountPaid
+        // Calculate unpaid earnings
+        let totalEarnings = 0;
+        labour.attendance.forEach(att => {
+            if (!att.paid) {
+                let dailyWage = labour.dailyWage || 0;
+                if (att.status === 'P' || att.status === 'Late') {
+                    totalEarnings += dailyWage;
+                } else if (att.status === 'HD') {
+                    totalEarnings += dailyWage / 2;
+                }
 
-        // For now, simple implementation: mark all current as paid/settled
-        // and update pendingDues based on amountPaid.
+                if (att.lateFee) {
+                    totalEarnings -= att.lateFee;
+                }
+            }
+        });
 
-        const unpaidEarnings = 0; // Logic needed here based on attendance and dailyWage
         const unsettledAdvances = labour.advances.filter(a => !a.settled).reduce((sum, a) => sum + a.amount, 0);
+        const netPayable = totalEarnings - unsettledAdvances;
+        const finalPaid = amountPaid !== undefined ? Number(amountPaid) : netPayable;
 
-        // Update statuses
+        // Mark items as paid/settled
         labour.attendance.forEach(a => { if (!a.paid) a.paid = true; });
         labour.advances.forEach(a => { if (!a.settled) a.settled = true; });
 
         labour.settlements.push({
             date: new Date(),
-            totalEarnings: unpaidEarnings,
-            totalDeductions: unsettledAdvances,
-            netAmount: amountPaid || 0,
-            notes: 'Settlement'
+            totalEarnings: totalEarnings,
+            advancesDeducted: unsettledAdvances,
+            netPaid: finalPaid,
+            notes: notes || 'Settlement'
         });
+
+        // Reset pending dues assuming full settlement, as logic implies clearing the slate
+        labour.pendingDues = 0;
 
         await labour.save();
         res.status(200).json({
@@ -315,7 +342,7 @@ export const settleAccount = async (req, res) => {
         console.error('Error settling account:', error);
         res.status(500).json({
             success: false,
-            error: 'Failed to settle account'
+            error: error.message || 'Failed to settle account'
         });
     }
 };
