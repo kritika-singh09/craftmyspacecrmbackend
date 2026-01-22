@@ -200,6 +200,43 @@ export const markAttendance = async (req, res) => {
     }
 };
 
+export const updateBatchAttendance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { updates } = req.body;
+
+        if (!Array.isArray(updates)) {
+            return res.status(400).json({ success: false, error: 'Updates must be an array' });
+        }
+
+        const labour = await Labour.findById(id);
+        if (!labour) {
+            return res.status(404).json({ success: false, error: 'Labour worker not found' });
+        }
+
+        updates.forEach(update => {
+            const { date, status, lateFee } = update;
+            const dateStr = new Date(date).toISOString().split('T')[0];
+            const existingIndex = labour.attendance.findIndex(a =>
+                new Date(a.date).toISOString().split('T')[0] === dateStr
+            );
+
+            if (existingIndex !== -1) {
+                labour.attendance[existingIndex].status = status;
+                labour.attendance[existingIndex].lateFee = lateFee || 0;
+            } else {
+                labour.attendance.push({ date, status, lateFee: lateFee || 0 });
+            }
+        });
+
+        await labour.save();
+        res.status(200).json({ success: true, data: labour });
+    } catch (error) {
+        console.error('Error batch updating attendance:', error);
+        res.status(500).json({ success: false, error: 'Failed to update batch attendance' });
+    }
+};
+
 // Add advance
 export const addAdvance = async (req, res) => {
     try {

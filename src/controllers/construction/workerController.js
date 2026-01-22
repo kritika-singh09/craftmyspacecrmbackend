@@ -1,4 +1,5 @@
 import { Worker } from '../../models/construction/worker.js';
+import mongoose from 'mongoose';
 
 // Helper to find the first available ID
 const getAvailableId = async (prefix) => {
@@ -130,6 +131,46 @@ export const updateAttendance = async (req, res) => {
         } else {
             worker.attendance.push({ date: attDate, status, lateFee: lateFee || 0, paid: false }); // explicit paid: false
         }
+
+        await worker.save();
+        res.status(200).json({ success: true, data: worker });
+    } catch (error) {
+        res.status(400).json({ success: false, error: error.message });
+    }
+};
+
+export const updateBatchAttendance = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { updates } = req.body; // Array of { date, status, lateFee }
+
+        if (!Array.isArray(updates)) {
+            return res.status(400).json({ success: false, error: 'Updates must be an array' });
+        }
+
+        const worker = await Worker.findById(id);
+        if (!worker) {
+            return res.status(404).json({ success: false, error: 'Worker not found' });
+        }
+
+        updates.forEach(update => {
+            const { date, status, lateFee } = update;
+            const attDate = new Date(date);
+            attDate.setHours(0, 0, 0, 0);
+
+            const existingIndex = worker.attendance.findIndex(a => {
+                const d = new Date(a.date);
+                d.setHours(0, 0, 0, 0);
+                return d.getTime() === attDate.getTime();
+            });
+
+            if (existingIndex !== -1) {
+                worker.attendance[existingIndex].status = status;
+                worker.attendance[existingIndex].lateFee = lateFee || 0;
+            } else {
+                worker.attendance.push({ date: attDate, status, lateFee: lateFee || 0, paid: false });
+            }
+        });
 
         await worker.save();
         res.status(200).json({ success: true, data: worker });

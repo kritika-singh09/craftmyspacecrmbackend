@@ -1,5 +1,5 @@
 import express from 'express';
-import { createWorker, getWorkers, updateWorker, deleteWorker, updateAttendance, addAdvance, settleWorker, getNextId } from '../../controllers/construction/workerController.js';
+import { createWorker, getWorkers, updateWorker, deleteWorker, updateAttendance, updateBatchAttendance, addAdvance, settleWorker, getNextId } from '../../controllers/construction/workerController.js';
 
 const router = express.Router();
 
@@ -12,6 +12,7 @@ router.post('/', createWorker);
 
 // Specific ID routes first
 router.put('/:id/attendance', updateAttendance);
+router.put('/:id/attendance-batch', updateBatchAttendance);
 router.post('/:id/advance', addAdvance);
 router.post('/:id/settle', settleWorker);
 

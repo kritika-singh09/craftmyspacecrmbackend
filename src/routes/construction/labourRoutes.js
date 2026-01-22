@@ -20,6 +20,7 @@ router.put('/:id', protect, upload.single('photo'), labourController.updateLabou
 
 // Mark attendance
 router.put('/:id/attendance', protect, labourController.markAttendance);
+router.put('/:id/attendance-batch', protect, labourController.updateBatchAttendance);
 
 // Add advance
 router.post('/:id/advance', protect, labourController.addAdvance);
